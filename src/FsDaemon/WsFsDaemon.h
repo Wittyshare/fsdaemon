@@ -121,14 +121,14 @@ private:
    * @returns DaemonStatus
    */
   DaemonStatus handleGetLockRequest(zmq::socket_t& sock, Json::Value& root);
-  
+
   /**
    * @brief releases the lock for the path
    * @param sock the zmq::socket_t
    * @returns DaemonStatus
    */
   DaemonStatus handlePutLockRequest(zmq::socket_t& sock, Json::Value& root);
-  
+
   /**
    * @brief checks the lock for the path
    * @param sock the zmq::socket_t

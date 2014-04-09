@@ -46,8 +46,9 @@ WsFsDaemon::~WsFsDaemon()
   delete WsLogWriter::instance();
 }
 
-WsFsDaemon::WsFsDaemon::DaemonStatus WsFsDaemon::workerRoutine() {
-  LOG(DEBUG)<<"WsFsDaemon::workerRoutine : starting new worker";
+WsFsDaemon::WsFsDaemon::DaemonStatus WsFsDaemon::workerRoutine()
+{
+  LOG(DEBUG) << "WsFsDaemon::workerRoutine : starting new worker";
   zmq::socket_t sock (*m_context, ZMQ_REP);
   sock.connect ("inproc://workers");
   Value root;
@@ -77,9 +78,6 @@ WsFsDaemon::WsFsDaemon::DaemonStatus WsFsDaemon::workerRoutine() {
       LOG(ERROR) << "WsFsDaemon::bind() : Error listening " << err.what();
     }
   }
-
-
-
 }
 
 
@@ -91,16 +89,13 @@ WsFsDaemon::WsFsDaemon::DaemonStatus WsFsDaemon::bind(unsigned int numWorkers)
     LOG(ERROR) << "WsFsDaemon::bind() : Could not update WsFileSystemTree";
     return Failure;
   }
-
   /* Retrieve values from configuration */
   string protocol = m_conf->get("global", "protocol", "tcp");
   string host = m_conf->get("global", "host", "127.0.0.1");
   string port = m_conf->get("global", "port", "5555");
-
   /* Init socket related data and socket */
   m_context = new context_t(1);
   socket_t clients(*m_context, ZMQ_ROUTER);
-  
   try {
     LOG(INFO) << "WsFsDaemon::bind() : Binding server using " << protocol << " on " << host << ":" << port;
     clients.bind((protocol + "://" + host + ":" + port).c_str());
@@ -108,14 +103,11 @@ WsFsDaemon::WsFsDaemon::DaemonStatus WsFsDaemon::bind(unsigned int numWorkers)
     LOG(ERROR) << "WsFsDaemon::bind() : Cannot bind socket : " << err.what();
     return Failure;
   }
-
   socket_t workers(*m_context, ZMQ_DEALER);
   workers.bind("inproc://workers");
-
   /* Load All groups */
   WsAuthenticator auth;
   m_allGroups = auth.getAllGroups();
-
   /* Launch workers in separate threads */
   for (int thread_nbr = 0; thread_nbr != numWorkers; thread_nbr++) {
     new boost::thread(boost::bind(&WsFsDaemon::workerRoutine, this));
@@ -573,7 +565,7 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleRenameNodeRequest(socket_t& sock, Val
   return send(sock, RequestField::Success);
 }
 
-WsFsDaemon::DaemonStatus WsFsDaemon::handleGetLockRequest(socket_t& sock, Value &root)
+WsFsDaemon::DaemonStatus WsFsDaemon::handleGetLockRequest(socket_t& sock, Value& root)
 {
   /* Get credentials */
   string uid = root[RequestField::Uid].asString();
@@ -583,10 +575,9 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleGetLockRequest(socket_t& sock, Value 
   int ret = m_operation->getLock(groups, uid, path);
   string rs = boost::lexical_cast<string>(ret);
   return send(sock, rs);
-
 }
 
-WsFsDaemon::DaemonStatus WsFsDaemon::handlePutLockRequest(socket_t& sock, Value &root)
+WsFsDaemon::DaemonStatus WsFsDaemon::handlePutLockRequest(socket_t& sock, Value& root)
 {
   /* Get credentials */
   string uid = root[RequestField::Uid].asString();
@@ -604,10 +595,10 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleIsLockedRequest(zmq::socket_t& sock, 
   string path = root[RequestField::Path].asString();
   /* Get groups */
   set<string> groups = m_userMap[uid]->getGroups();
-  std::string id="";
+  std::string id = "";
   int ret = m_operation->isLocked(groups, uid, path, id);
-  if(ret == 1 || ret == -1)
-      return send(sock, "");
+  if (ret == 1 || ret == -1)
+    return send(sock, "");
   return send(sock, id);
 }
 

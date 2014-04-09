@@ -33,7 +33,7 @@ int WsFsDaemonLoader::start()
 {
   if (!m_daemon) {
     m_server = new WsFsDaemon(m_props);
-    int nworkers = boost::lexical_cast<int>(m_props->get("global","num_workers", "1")); 
+    int nworkers = boost::lexical_cast<int>(m_props->get("global", "num_workers", "1"));
     return m_server->bind(nworkers);
   } else
     return daemonize();
