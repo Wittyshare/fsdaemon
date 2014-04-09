@@ -131,7 +131,7 @@ WsFsDaemon::DaemonStatus WsFsDaemon::send(socket_t& sock, const string& s)
   try {
     /* Compress data ? */
     if (m_compress) {
-      char* data;
+      char* data = 0;
       long r = m_compressor->compress(s, &data);
       if (r == FAILURE)
         return Failure;
@@ -250,6 +250,7 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleRequest(socket_t& sock, Value& root )
     /* Get isAdmin request */
   case IsAdmin:
     return handleIsAdminRequest(sock, root);
+    /* get RootPath request */
   case RootPath:
     return handleRootPathRequest(sock, root);
     /* Get tree version request */
@@ -270,7 +271,15 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleRequest(socket_t& sock, Value& root )
     /* Rename a node request */
   case RenameNode:
     return handleRenameNodeRequest(sock, root);
-    /* get RootPath request */
+    /* Lock a node request */
+  case GetLock:
+    return handleGetLockRequest(sock, root);
+    /* Unlock a node request */
+  case PutLock:
+    return handlePutLockRequest(sock, root);
+    /* Check lock */
+  case IsLocked:
+    return handleIsLockedRequest(sock, root);
   default:
     LOG(ERROR) << "WsFsDaemon::handleRequest() : Undefined request type " << requestType;
     return Failure;
@@ -562,6 +571,44 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleRenameNodeRequest(socket_t& sock, Val
   if (m_operation->renameNode(groups, uid, path, newPath) == FAILURE)
     return Failure;
   return send(sock, RequestField::Success);
+}
+
+WsFsDaemon::DaemonStatus WsFsDaemon::handleGetLockRequest(socket_t& sock, Value &root)
+{
+  /* Get credentials */
+  string uid = root[RequestField::Uid].asString();
+  string path = root[RequestField::Path].asString();
+  /* Get groups */
+  set<string> groups = m_userMap[uid]->getGroups();
+  int ret = m_operation->getLock(groups, uid, path);
+  string rs = boost::lexical_cast<string>(ret);
+  return send(sock, rs);
+
+}
+
+WsFsDaemon::DaemonStatus WsFsDaemon::handlePutLockRequest(socket_t& sock, Value &root)
+{
+  /* Get credentials */
+  string uid = root[RequestField::Uid].asString();
+  string path = root[RequestField::Path].asString();
+  /* Get groups */
+  set<string> groups = m_userMap[uid]->getGroups();
+  int ret = m_operation->putLock(groups, uid, path);
+  string rs = boost::lexical_cast<string>(ret);
+  return send(sock, rs);
+}
+
+WsFsDaemon::DaemonStatus WsFsDaemon::handleIsLockedRequest(zmq::socket_t& sock, Json::Value& root)
+{
+  string uid = root[RequestField::Uid].asString();
+  string path = root[RequestField::Path].asString();
+  /* Get groups */
+  set<string> groups = m_userMap[uid]->getGroups();
+  std::string id="";
+  int ret = m_operation->isLocked(groups, uid, path, id);
+  if(ret == 1 || ret == -1)
+      return send(sock, "");
+  return send(sock, id);
 }
 
 WsFsDaemon::DaemonStatus WsFsDaemon::handleRootPathRequest(socket_t& sock, Value& root)

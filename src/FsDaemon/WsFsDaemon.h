@@ -116,6 +116,27 @@ private:
   DaemonStatus handleMenuRequest(zmq::socket_t& sock, Json::Value& root);
 
   /**
+   * @brief Acquires the lock for the path
+   * @param sock the zmq::socket_t
+   * @returns DaemonStatus
+   */
+  DaemonStatus handleGetLockRequest(zmq::socket_t& sock, Json::Value& root);
+  
+  /**
+   * @brief releases the lock for the path
+   * @param sock the zmq::socket_t
+   * @returns DaemonStatus
+   */
+  DaemonStatus handlePutLockRequest(zmq::socket_t& sock, Json::Value& root);
+  
+  /**
+   * @brief checks the lock for the path
+   * @param sock the zmq::socket_t
+   * @returns DaemonStatus
+   */
+  DaemonStatus handleIsLockedRequest(zmq::socket_t& sock, Json::Value& root);
+
+  /**
    * @brief Sends the menu to the client, the client requested a menu with exclusion of extensions
    * @param sock the zmq::socket_t
    * @returns DaemonStatus
