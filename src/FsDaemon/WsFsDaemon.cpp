@@ -14,7 +14,6 @@
 #include "WsFsDaemon.h"
 
 #include <Include/WsGlobalConfig.h>
-#include <Tree/WsMenuTree.h>
 #include <Tree/WsAccessTree.h>
 #include <Serializer/WsArraySerializer.h>
 #include <Serializer/WsTreeSerializer.h>
@@ -227,13 +226,7 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleRequest(socket_t& sock, Value& root )
     /* Clear cache request */
   case ClearCache:
     return handleClearCache(sock, root);
-    /* Get menu item request */
-  case MenuItems:
-    return handleMenuRequest(sock, root);
-    /* Get menu item with exclusions request */
-  case MenuItemsEx:
-    return handleMenuRequestEx(sock, root);
-    /* Get access tree items */
+    /* Get access tree item request */
   case AccessItems:
     return handleAccessTreeRequest(sock, root);
     /* Get isEditor request */
@@ -318,48 +311,6 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleAuthRequest(socket_t& sock, Value& ro
   m_userMap[c.getUid()] = sess;
   LOG(INFO) << "WsFsDaemon::handleAuthRequest() : new uid is " << c.getUid();
   return send(sock, answer.toStyledString());
-}
-
-WsFsDaemon::DaemonStatus WsFsDaemon::handleMenuRequest(socket_t& sock, Value& root)
-{
-  /* get credentials */
-  string uid = root[RequestField::Uid].asString();
-  set<string> groups = m_userMap[uid]->getGroups();
-  /* Create menuTree */
-  WsMenuTree* tree = m_operation->getMenuTree(groups);
-  if (tree == 0)
-    return Failure;
-  /* Transform menuTree to json */
-  WsTreeSerializer serializer(tree);
-  serializer.serialize();
-  delete tree;
-  return send(sock, serializer.getSerializedForm());
-}
-
-WsFsDaemon::DaemonStatus WsFsDaemon::handleMenuRequestEx(socket_t& sock, Value& root)
-{
-  /* get credentials */
-  string uid = root[RequestField::Uid].asString();
-  Value names;
-  Value ext;
-  set<string> groups = m_userMap[uid]->getGroups();
-  /* Get the 2 vectors */
-  set<string> exclNames, exclExt;
-  names = root[RequestField::ExclNames];
-  for (int i = 0; i < names.size(); ++i)
-    exclNames.insert(names[i].asString());
-  ext = root[RequestField::ExclExt];
-  for (int i = 0; i < ext.size(); ++i)
-    exclExt.insert(ext[i].asString());
-  /* Create menuTree */
-  WsMenuTree* tree = m_operation->getMenuTree(groups, exclNames, exclExt);
-  if (tree == 0)
-    return Failure;
-  /* Transform menuTree to json */
-  WsTreeSerializer serializer(tree);
-  serializer.serialize();
-  delete tree;
-  return send(sock, serializer.getSerializedForm());
 }
 
 WsFsDaemon::DaemonStatus WsFsDaemon::handleAccessTreeRequest(socket_t& sock, Value& root)
