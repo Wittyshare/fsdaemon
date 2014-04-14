@@ -84,7 +84,7 @@ WsFsDaemon::WsFsDaemon::DaemonStatus WsFsDaemon::bind(unsigned int numWorkers)
 {
   /* Instanciate object used for operations on tree */
   m_operation = new WsFsTreeOperations();
-  if ( m_operation->update() == FAILURE) {
+  if ( m_operation->update() == ErrorCode::Failure) {
     LOG(ERROR) << "WsFsDaemon::bind() : Could not update WsFileSystemTree";
     return Failure;
   }
@@ -124,7 +124,7 @@ WsFsDaemon::DaemonStatus WsFsDaemon::send(socket_t& sock, const string& s)
     if (m_compress) {
       char* data = 0;
       long r = m_compressor->compress(s, &data);
-      if (r == FAILURE)
+      if (r == ErrorCode::Failure)
         return Failure;
       /* Create message */
       message_t reply(r);
@@ -292,7 +292,7 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleAuthRequest(socket_t& sock, Value& ro
   LOG(INFO) << "WsFsDaemon::handleAuthRequest() : Received authentification request from user " << uid;
   /* No active session, we need to authenticate the user */
   WsAuthenticator c;
-  if (c.authentify(uid, pass, ip) == FAILURE)
+  if (c.authentify(uid, pass, ip) == ErrorCode::Failure)
     return Failure;
   /* Create message */
   Value answer;
@@ -339,7 +339,7 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handlePermRequest(socket_t& sock, Value& ro
   set<string> groups = m_userMap[uid]->getGroups();
   /* Get permissions on node for user */
   int perms = m_operation->getPermissions(groups, path);
-  if ( perms != FAILURE)
+  if ( perms != ErrorCode::Failure)
     return send(sock, boost::lexical_cast<string>(perms));
   return Failure;
 }
@@ -350,7 +350,7 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleAllGroupsRequest(socket_t& sock, Valu
   string uid = root[RequestField::Uid].asString();
   /* Serialize the groups */
   WsArraySerializer s(m_allGroups);
-  if (send(sock, s.getSerializedForm()) == FAILURE)
+  if (send(sock, s.getSerializedForm()) == ErrorCode::Failure)
     return Failure;
   return Success;
 }
@@ -453,7 +453,7 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleSavePropertiesRequest(socket_t& sock,
   /* Get groups */
   set<string> groups = m_userMap[uid]->getGroups();
   /* Save */
-  if (m_operation->saveProperties(groups, root[RequestField::Property].toStyledString(), path) != FAILURE)
+  if (m_operation->saveProperties(groups, root[RequestField::Property].toStyledString(), path) != ErrorCode::Failure)
     return send(sock, RequestField::Success);
   return Failure;
 }
@@ -469,7 +469,7 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleSavePropertyRequest(socket_t& sock, V
   /* get groups */
   set<string> groups = m_userMap[uid]->getGroups();
   /* Save */
-  if (m_operation->saveProperty(groups, path, section, key, value) != FAILURE)
+  if (m_operation->saveProperty(groups, path, section, key, value) != ErrorCode::Failure)
     return send(sock, RequestField::Success);
   return Failure;
 }
@@ -484,7 +484,7 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleCreateNodeRequest(socket_t& sock, Val
   /* Get groups */
   set<string> groups = m_userMap[uid]->getGroups();
   /* Create node */
-  if (m_operation->createNode(groups, uid, path, type) == FAILURE)
+  if (m_operation->createNode(groups, uid, path, type) == ErrorCode::Failure)
     return Failure;
   return send(sock, RequestField::Success);
 }
@@ -497,7 +497,7 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleDeleteNodeRequest(socket_t& sock, Val
   /* Get groups */
   set<string> groups = m_userMap[uid]->getGroups();
   /* delete node */
-  if (m_operation->deleteNode(groups, uid, path) == FAILURE)
+  if (m_operation->deleteNode(groups, uid, path) == ErrorCode::Failure)
     return Failure;
   return send(sock, RequestField::Success);
 }
@@ -511,7 +511,7 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleRenameNodeRequest(socket_t& sock, Val
   /* Get groups */
   set<string> groups = m_userMap[uid]->getGroups();
   /* rename node */
-  if (m_operation->renameNode(groups, uid, path, newPath) == FAILURE)
+  if (m_operation->renameNode(groups, uid, path, newPath) == ErrorCode::Failure)
     return Failure;
   return send(sock, RequestField::Success);
 }
@@ -548,9 +548,10 @@ WsFsDaemon::DaemonStatus WsFsDaemon::handleIsLockedRequest(zmq::socket_t& sock, 
   set<string> groups = m_userMap[uid]->getGroups();
   std::string id = "";
   int ret = m_operation->isLocked(groups, uid, path, id);
-  if (ret == 1 || ret == -1)
-    return send(sock, "");
-  return send(sock, id);
+  Value answer;
+  answer[RequestField::Value] = ret;
+  answer[RequestField::Uid] = id;
+  return send(sock, answer.toStyledString());
 }
 
 WsFsDaemon::DaemonStatus WsFsDaemon::handleRootPathRequest(socket_t& sock, Value& root)

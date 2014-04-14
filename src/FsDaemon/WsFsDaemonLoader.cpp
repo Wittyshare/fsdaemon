@@ -142,7 +142,7 @@ int main(int argc, char** argv)
   }
   /* Init the random number generator */
   srand (time(NULL));
-  if (serverLoader->start() == SUCCESS)
+  if (serverLoader->start() == ErrorCode::Success)
     return EXIT_SUCCESS;
   else return EXIT_FAILURE;
 }
