@@ -18,7 +18,6 @@
 #include <ConfigManager/WsGlobalProperties.h>
 #include <signal.h>
 
-
 /**
  * @brief  Loads the FsDaemon depending on the params passed as args
  */
