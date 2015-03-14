@@ -18,7 +18,7 @@ SET (APPNAME_SRCS
 INCLUDE(${CMAKE_ROOT}/Modules/gdcmake/Find_wscore.cmake)
 
 IF(NOT WSCORE_FOUND)
-	MESSAGE(FATAL_ERROR "** these program needs wscore libraries... Abord.")
+	MESSAGE(FATAL_ERROR "** these program needs wscore libraries... Abort.")
 ENDIF(NOT WSCORE_FOUND)
 
 INCLUDE_DIRECTORIES(
